@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>FactoryIQ - Smart Factory Optimization</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h1>🏭 FactoryIQ - Smart Resource Optimization</h1>
+
+<div class="grid">
+
+  <div class="card" id="card-power">
+    <h2>CNC Power</h2>
+    <p id="power">-- kW</p>
+  </div>
+
+  <div class="card" id="card-temp">
+    <h2>Furnace Temp</h2>
+    <p id="temp">-- °C</p>
+  </div>
+
+  <div class="card" id="card-pressure">
+    <h2>Compressor Pressure</h2>
+    <p id="pressure">-- bar</p>
+  </div>
+
+  <div class="card" id="card-efficiency">
+    <h2>Efficiency Score</h2>
+    <p id="efficiency" style="font-weight: bold; font-size: 1.5rem;">-- %</p>
+  </div>
+
+  <div class="card" id="card-carbon">
+    <h2>Carbon Footprint</h2>
+    <p id="carbon">-- kg CO2/h</p>
+  </div>
+
+  <div class="card">
+    <h2>Projected Savings</h2>
+    <p id="savings">--</p>
+  </div>
+
+  <div class="card full">
+    <h2>Optimization Recommendation</h2>
+    <p id="recommendation">Analyzing system dynamics...</p>
+  </div>
+
+  <div class="card full">
+    <h2>Energy Trend (Real-Time kW)</h2>
+    <canvas id="energyChart"></canvas>
+  </div>
+
+  <div class="card full">
+    <h2>System Efficiency Gauge</h2>
+    <canvas id="gaugeChart"></canvas>
+  </div>
+
+</div>
+
+<div class="controls">
+  <button onclick="downloadReport()">📥 Download Optimization Report</button>
+</div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
