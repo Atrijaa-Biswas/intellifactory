@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IntelliFactory | Power Analytics</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>⚡ Power & Cost Monitoring</h1>
+    
+    <nav>
+        <button onclick="location.href='index.html'">Overview</button>
+        <button onclick="location.href='cnc.html'">CNC (Temp/Press)</button>
+        <button onclick="location.href='power.html'" style="background: var(--primary); color: white;">Power & Cost</button>
+        <button onclick="location.href='sustainability.html'">Sustainability</button>
+        <button onclick="location.href='intelligence.html'">Intelligence</button>
+        <button onclick="location.href='analytics.html'">Shift Analytics</button>
+    </nav>
+
+    <div class="grid">
+        <div class="card" style="text-align: center; border-top: 5px solid var(--warning);">
+            <h3 style="color: var(--text-muted);">LIVE LOAD</h3>
+            <h1 style="font-size: 3.5rem; margin: 10px 0;"><span id="pwrLive">--</span> <small style="font-size: 1rem;">kW</small></h1>
+            <p>Status: <span id="pwrStatus" class="status-badge status-idle">WAITING</span></p>
+        </div>
+
+        <div class="card" style="text-align: center; border-top: 5px solid var(--success);">
+            <h3 style="color: var(--text-muted);">ESTIMATED HOURLY COST</h3>
+            <h1 style="font-size: 3.5rem; margin: 10px 0; color: var(--success);">₹<span id="pwrCost">--</span></h1>
+            <p style="color: #64748b;">Based on Industrial Tariff: ₹8/kWh</p>
+        </div>
+    </div>
+
+    <div class="card full-width" style="margin-top: 20px;">
+        <h3>Power Consumption Trend (Last 1 Hour)</h3>
+        <canvas id="powerTrendChart" style="max-height: 350px;"></canvas>
+    </div>
+
+    <script type="module">
+        import { subscribeToLive, subscribeToHistory } from './js/data-service.js';
+        import { calculateCost, getMachineStatus } from './js/calculations.js';
+
+        // 1. Initialize High-Density Power Chart
+        const ctx = document.getElementById('powerTrendChart').getContext('2d');
+        const powerChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Load (kW)',
+                    data: [],
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    fill: true,
+                    tension: 0.2,
+                    pointRadius: 0 // Smooth line for 360 data points
+                }]
+            },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false,
+                scales: {
+                    x: { ticks: { maxTicksLimit: 10 } } // Keeps timestamps readable
+                }
+            }
+        });
+
+        // 2. Load 1-Hour History for Graph Continuity
+        subscribeToHistory((history) => {
+            powerChart.data.labels = history.map(d => {
+                const date = d.timestamp?.toDate ? d.timestamp.toDate() : new Date();
+                return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            });
+            powerChart.data.datasets[0].data = history.map(d => d.power);
+            powerChart.update();
+        }, 360);
+
+        // 3. Update Real-Time Metrics
+        subscribeToLive((data) => {
+            if(!data) return;
+            
+            document.getElementById('pwrLive').innerText = data.power.toFixed(2);
+            document.getElementById('pwrCost').innerText = calculateCost(data.power);
+            
+            const status = getMachineStatus(data);
+            const statusEl = document.getElementById('pwrStatus');
+            statusEl.innerText = status;
+            statusEl.className = `status-badge status-${status.toLowerCase()}`;
+        });
+    </script>
+</body>
+</html>

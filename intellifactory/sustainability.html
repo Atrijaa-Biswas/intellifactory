@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IntelliFactory | Sustainability Analytics</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>🌍 Sustainability & Emissions Tracking</h1>
+    
+    <nav>
+        <button onclick="location.href='index.html'">Overview</button>
+        <button onclick="location.href='cnc.html'">CNC (Temp/Press)</button>
+        <button onclick="location.href='power.html'">Power & Cost</button>
+        <button onclick="location.href='sustainability.html'" style="background: var(--primary); color: white;">Sustainability</button>
+        <button onclick="location.href='intelligence.html'">Intelligence</button>
+        <button onclick="location.href='analytics.html'">Shift Analytics</button>
+    </nav>
+
+    <div class="grid">
+        <div class="card" style="text-align: center; border-top: 5px solid #10b981;">
+            <h3 style="color: var(--text-muted); text-transform: uppercase;">Live Carbon Rate</h3>
+            <h1 style="font-size: 3.5rem; margin: 10px 0;"><span id="liveCo2">--</span></h1>
+            <p style="color: #64748b; font-weight: bold;">kg CO₂ / hour</p>
+            <p style="font-size: 0.85rem; color: #94a3b8; margin-top: 5px;">(Based on 0.82 kg CO₂/kWh factor)</p>
+        </div>
+
+        <div class="card" style="text-align: center; border-top: 5px solid #3b82f6;">
+            <h3 style="color: var(--text-muted); text-transform: uppercase;">Daily Carbon Projection</h3>
+            <h1 style="font-size: 3.5rem; margin: 10px 0; color: #0f172a;"><span id="dailyCo2">--</span></h1>
+            <p style="color: #64748b; font-weight: bold;">kg CO₂ / 24 hours</p>
+            <p style="margin-top: 15px;">Status: <span id="susStatus" class="status-badge status-idle">WAITING</span></p>
+        </div>
+    </div>
+
+    <div class="card full-width" style="margin-top: 20px;">
+        <h3>Emissions Trend (Last 1 Hour)</h3>
+        <canvas id="co2TrendChart" style="max-height: 350px;"></canvas>
+    </div>
+
+    <script type="module">
+        import { subscribeToLive, subscribeToHistory } from './js/data-service.js';
+        import { calculateCarbon, getMachineStatus } from './js/calculations.js';
+
+        // 1. Initialize High-Density Chart
+        const ctx = document.getElementById('co2TrendChart').getContext('2d');
+        const co2Chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Carbon Output (kg/h)',
+                    data: [],
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    fill: true,
+                    tension: 0.2,
+                    pointRadius: 0 // Smooth line for 360 data points
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { ticks: { maxTicksLimit: 10 } } // Keeps timestamps readable
+                }
+            }
+        });
+
+        // 2. Load 1-Hour History for Graph Continuity
+        subscribeToHistory((history) => {
+            co2Chart.data.labels = history.map(d => {
+                const date = d.timestamp?.toDate ? d.timestamp.toDate() : new Date();
+                return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            });
+            // Map the raw power data through the calculateCarbon function for the graph
+            co2Chart.data.datasets[0].data = history.map(d => calculateCarbon(d.power));
+            co2Chart.update();
+        }, 360);
+
+        // 3. Update Real-Time Metrics
+        subscribeToLive((data) => {
+            if(!data) return;
+            
+            const carbonHourly = calculateCarbon(data.power);
+            const carbonDaily = (parseFloat(carbonHourly) * 24).toFixed(1);
+
+            document.getElementById('liveCo2').innerText = carbonHourly;
+            document.getElementById('dailyCo2').innerText = carbonDaily;
+            
+            const status = getMachineStatus(data);
+            const statusEl = document.getElementById('susStatus');
+            statusEl.innerText = status;
+            statusEl.className = `status-badge status-${status.toLowerCase()}`;
+        });
+    </script>
+</body>
+</html>

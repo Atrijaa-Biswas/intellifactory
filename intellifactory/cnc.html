@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IntelliFactory | CNC Operations</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>⚙️ CNC Operations Details</h1>
+    
+    <nav>
+        <button onclick="location.href='index.html'">Dashboard</button>
+        <button onclick="location.href='cnc.html'" style="background: var(--primary); color: white;">CNC</button>
+        <button onclick="location.href='power.html'">Power</button>
+        <button onclick="location.href='sustainability.html'">Sustainability</button>
+        <button onclick="location.href='intelligence.html'">Intelligence</button>
+        <button onclick="location.href='analytics.html'">Analytics</button>
+    </nav>
+
+    <div class="grid">
+        <div class="card data-card" style="text-align: center; border-top: 5px solid #ef4444;">
+            <h3 style="color: var(--text-muted);">TEMPERATURE</h3>
+            <h1 style="font-size: 3.5rem; margin: 10px 0;"><span id="cncTemp">--</span> <small style="font-size: 1rem;">°C</small></h1>
+        </div>
+        
+        <div class="card data-card" style="text-align: center; border-top: 5px solid #3b82f6;">
+            <h3 style="color: var(--text-muted);">PRESSURE</h3>
+            <h1 style="font-size: 3.5rem; margin: 10px 0;"><span id="cncPressure">--</span> <small style="font-size: 1rem;">bar</small></h1>
+        </div>
+        
+        <div class="card data-card" style="text-align: center;">
+            <h3 style="color: var(--text-muted);">MACHINE STATE</h3>
+            <h1 style="font-size: 2.5rem; margin: 20px 0;"><span id="cncStatus" class="status-badge status-idle">WAITING</span></h1>
+        </div>
+
+        <div class="card full-width">
+            <h3>Operational Trend (Last 1 Hour / 360 Samples)</h3>
+            <canvas id="cncChart" style="max-height: 350px;"></canvas>
+        </div>
+    </div>
+
+    <script type="module">
+        import { subscribeToLive, subscribeToHistory } from './js/data-service.js';
+        import { getMachineStatus } from './js/calculations.js';
+        import { initCncChart } from './js/charts.js';
+
+        // 1. Initialize Dual-Axis Chart
+        const chartCtx = document.getElementById('cncChart').getContext('2d');
+        const cncChartInstance = initCncChart(chartCtx);
+
+        // 2. Load 1-Hour History for Continuity
+        subscribeToHistory((history) => {
+            cncChartInstance.data.labels = history.map(d => {
+                const date = d.timestamp?.toDate ? d.timestamp.toDate() : new Date();
+                return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            });
+            
+            cncChartInstance.data.datasets[0].data = history.map(d => d.temp);
+            cncChartInstance.data.datasets[1].data = history.map(d => d.pressure);
+
+            // Optimize visual clarity for dense data
+            cncChartInstance.options.scales.x = { ticks: { maxTicksLimit: 10 } };
+            cncChartInstance.data.datasets.forEach(ds => { ds.pointRadius = 0; ds.tension = 0.2; });
+
+            cncChartInstance.update();
+        }, 360); // Fetch exactly 360 points (1 hour at 10s intervals)
+
+        // 3. Live UI Updates
+        subscribeToLive((data) => {
+            if(!data) return;
+            document.getElementById('cncTemp').innerText = data.temp.toFixed(1);
+            document.getElementById('cncPressure').innerText = data.pressure.toFixed(2);
+
+            const status = getMachineStatus(data);
+            const statusEl = document.getElementById('cncStatus');
+            statusEl.innerText = status;
+            statusEl.className = `status-badge status-${status.toLowerCase()}`;
+        });
+    </script>
+</body>
+</html>
