@@ -10,29 +10,38 @@
 
 <h1>🏭 FactoryIQ - Smart Resource Optimization</h1>
 
-<div class="grid">
+<div class="manual-input-panel">
+  <h3>Input Simulator / Manual Entry</h3>
+  <div class="input-row">
+    <input type="number" id="manualPower" placeholder="Power (kW)" step="0.1">
+    <input type="number" id="manualTemp" placeholder="Temp (°C)" step="1">
+    <input type="number" id="manualPressure" placeholder="Pressure (bar)" step="0.1">
+    <button class="push-btn" onclick="pushManualData()">🚀 Push Data</button>
+  </div>
+</div>
 
-  <div class="card" id="card-power">
+<div class="grid">
+  <div class="card">
     <h2>CNC Power</h2>
     <p id="power">-- kW</p>
   </div>
 
-  <div class="card" id="card-temp">
+  <div class="card">
     <h2>Furnace Temp</h2>
     <p id="temp">-- °C</p>
   </div>
 
-  <div class="card" id="card-pressure">
+  <div class="card">
     <h2>Compressor Pressure</h2>
     <p id="pressure">-- bar</p>
   </div>
 
-  <div class="card" id="card-efficiency">
+  <div class="card">
     <h2>Efficiency Score</h2>
-    <p id="efficiency" style="font-weight: bold; font-size: 1.5rem;">-- %</p>
+    <p id="efficiency" style="font-weight: bold;">-- %</p>
   </div>
 
-  <div class="card" id="card-carbon">
+  <div class="card">
     <h2>Carbon Footprint</h2>
     <p id="carbon">-- kg CO2/h</p>
   </div>
@@ -44,24 +53,21 @@
 
   <div class="card full">
     <h2>Optimization Recommendation</h2>
-    <p id="recommendation">Analyzing system dynamics...</p>
+    <p id="recommendation">Waiting for system data...</p>
   </div>
 
   <div class="card full">
-    <h2>Energy Trend (Real-Time kW)</h2>
+    <h2>Energy Trend</h2>
     <canvas id="energyChart"></canvas>
   </div>
 
   <div class="card full">
-    <h2>System Efficiency Gauge</h2>
+    <h2>Efficiency Gauge</h2>
     <canvas id="gaugeChart"></canvas>
   </div>
-
 </div>
 
-<div class="controls">
-  <button onclick="downloadReport()">📥 Download Optimization Report</button>
-</div>
+<button class="report-btn" onclick="downloadReport()">Download Report</button>
 
 <script type="module" src="app.js"></script>
 </body>
