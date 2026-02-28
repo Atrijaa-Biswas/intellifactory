@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IntelliFactory | CNC Operations</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>⚙️ CNC Operations Details</h1>
+    
+    <nav>
+        <button onclick="location.href='index.html'">Dashboard</button>
+        <button onclick="location.href='cnc.html'">CNC</button>
+        <button onclick="location.href='power.html'">Power</button>
+        <button onclick="location.href='sustainability.html'">Sustainability</button>
+        <button onclick="location.href='intelligence.html'">Intelligence</button>
+        <button onclick="location.href='analytics.html'">Analytics</button>
+    </nav>
+
+    <div class="grid">
+        <div class="card data-card">
+            <h2>Current Temperature</h2>
+            <p class="metric"><span id="cncTemp">--</span> °C</p>
+        </div>
+        
+        <div class="card data-card">
+            <h2>Current Pressure</h2>
+            <p class="metric"><span id="cncPressure">--</span> bar</p>
+        </div>
+        
+        <div class="card data-card">
+            <h2>Machine Runtime</h2>
+            <p class="metric"><span id="cncRuntime">--</span> hrs</p>
+            <p style="margin-top: 15px;">Status: <span id="cncStatus" class="status-badge status-idle">WAITING</span></p>
+        </div>
+
+        <div class="card full-width">
+            <h2>Operational Trend (Temp vs Pressure)</h2>
+            <canvas id="cncChart"></canvas>
+        </div>
+    </div>
+
+    <script type="module">
+        import { subscribeToData } from './js/data-service.js';
+        import { getMachineStatus } from './js/calculations.js';
+        import { initCncChart, updateCncChart } from './js/charts.js';
+
+        // Initialize Chart from our modular charts.js file
+        const chartCtx = document.getElementById('cncChart').getContext('2d');
+        const cncChartInstance = initCncChart(chartCtx);
+
+        // Listen to Real-Time Updates
+        subscribeToData((data) => {
+            if(!data) return;
+            
+            // Update text metrics
+            document.getElementById('cncTemp').innerText = data.temp.toFixed(1);
+            document.getElementById('cncPressure').innerText = data.pressure.toFixed(2);
+            document.getElementById('cncRuntime').innerText = data.runtime.toFixed(1);
+
+            // Update Badge
+            const status = getMachineStatus(data);
+            const statusEl = document.getElementById('cncStatus');
+            statusEl.innerText = status;
+            statusEl.className = `status-badge status-${status.toLowerCase()}`;
+
+            // Push new data to the chart
+            updateCncChart(cncChartInstance, data.temp, data.pressure);
+        });
+    </script>
+</body>
+</html>
