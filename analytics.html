@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IntelliFactory | Shift Analytics</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <h1>📅 Shift Performance Analytics</h1>
+    
+    <nav>
+        <button onclick="location.href='index.html'">Overview</button>
+        <button onclick="location.href='cnc.html'">CNC (Temp/Press)</button>
+        <button onclick="location.href='power.html'">Power & Cost</button>
+        <button onclick="location.href='sustainability.html'">Sustainability</button>
+        <button onclick="location.href='intelligence.html'">Intelligence</button>
+        <button onclick="location.href='analytics.html'" style="background: var(--primary); color: white;">Shift Analytics</button>
+    </nav>
+
+    <div class="card" style="text-align: center; margin-bottom: 20px;">
+        <h3>Select Operational Shift</h3>
+        <select id="shiftSelect" style="font-size: 1.1rem; padding: 10px; width: 250px;">
+            <option value="ALL">All Shifts (24 hrs)</option>
+            <option value="MORNING">Morning (06:00 - 14:00)</option>
+            <option value="AFTERNOON">Afternoon (14:00 - 22:00)</option>
+            <option value="NIGHT">Night (22:00 - 06:00)</option>
+        </select>
+        <p style="color: #64748b; font-size: 0.9rem; margin-top: 10px;">Analyzing the last 100 system records.</p>
+    </div>
+
+    <div class="grid">
+        <div class="card" style="text-align: center; border-left: 5px solid var(--primary);">
+            <h3 style="color: #64748b; text-transform: uppercase;">Average Efficiency</h3>
+            <h1 style="font-size: 3.5rem; margin: 10px 0; color: #0f172a;"><span id="avgEff">--</span>%</h1>
+        </div>
+
+        <div class="card" style="text-align: center; border-left: 5px solid var(--warning);">
+            <h3 style="color: #64748b; text-transform: uppercase;">Average Temperature</h3>
+            <h1 style="font-size: 3.5rem; margin: 10px 0; color: #0f172a;"><span id="avgTemp">--</span> °C</h1>
+        </div>
+        
+        <div class="card" style="text-align: center; border-left: 5px solid #94a3b8;">
+            <h3 style="color: #64748b; text-transform: uppercase;">Data Points Evaluated</h3>
+            <h1 style="font-size: 3.5rem; margin: 10px 0; color: #0f172a;"><span id="dataCount">0</span></h1>
+        </div>
+    </div>
+
+    <script type="module">
+        import { subscribeToHistory } from './js/data-service.js';
+        import { calculateFailureRisk } from './js/calculations.js';
+
+        let historicalData = [];
+
+        // Determine Shift based on hour (0-23)
+        function getShift(hour) {
+            if (hour >= 6 && hour < 14) return "MORNING";
+            if (hour >= 14 && hour < 22) return "AFTERNOON";
+            return "NIGHT"; // 22 to 5
+        }
+
+        function updateAnalytics() {
+            const selectedShift = document.getElementById('shiftSelect').value;
+            
+            // Filter data by shift
+            const filteredData = historicalData.filter(d => {
+                if (selectedShift === "ALL") return true;
+                if (!d.timestamp) return false;
+                
+                // Convert Firebase timestamp to JS Date
+                const date = d.timestamp.toDate ? d.timestamp.toDate() : new Date(d.timestamp);
+                return getShift(date.getHours()) === selectedShift;
+            });
+
+            document.getElementById('dataCount').innerText = filteredData.length;
+
+            if (filteredData.length === 0) {
+                document.getElementById('avgEff').innerText = "--";
+                document.getElementById('avgTemp').innerText = "--";
+                return;
+            }
+
+            // Calculate Averages
+            let totalTemp = 0;
+            let totalEff = 0;
+
+            filteredData.forEach(d => {
+                totalTemp += d.temp || 0;
+                // Efficiency = 100 - Failure Risk
+                totalEff += (100 - calculateFailureRisk(d)); 
+            });
+
+            document.getElementById('avgTemp').innerText = (totalTemp / filteredData.length).toFixed(1);
+            document.getElementById('avgEff').innerText = (totalEff / filteredData.length).toFixed(1);
+        }
+
+        // Listen for dropdown changes
+        document.getElementById('shiftSelect').addEventListener('change', updateAnalytics);
+
+        // Subscribe to a batch of recent historical data
+        subscribeToHistory((dataArray) => {
+            historicalData = dataArray;
+            updateAnalytics();
+        });
+    </script>
+</body>
+</html>

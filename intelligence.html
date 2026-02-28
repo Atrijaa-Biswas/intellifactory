@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IntelliFactory | Predictive Intelligence</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <h1>🧠 Predictive Intelligence & Health</h1>
+    
+    <nav>
+        <button onclick="location.href='index.html'">Overview</button>
+        <button onclick="location.href='cnc.html'">CNC (Temp/Press)</button>
+        <button onclick="location.href='power.html'">Power & Cost</button>
+        <button onclick="location.href='sustainability.html'">Sustainability</button>
+        <button onclick="location.href='intelligence.html'" style="background: var(--primary); color: white;">Intelligence</button>
+        <button onclick="location.href='analytics.html'">Shift Analytics</button>
+    </nav>
+
+    <div class="grid">
+        <div class="card" style="text-align: center; border-top: 5px solid var(--danger);">
+            <h3>System Failure Risk</h3>
+            <h1 style="font-size: 4rem; margin: 10px 0; color: #0f172a;"><span id="riskScore">--</span>%</h1>
+            <p>Risk Level: <span id="riskLabel" style="font-weight: bold; padding: 4px 12px; border-radius: 4px; color: white; background: gray;">UNKNOWN</span></p>
+        </div>
+
+        <div class="card" style="text-align: center; border-top: 5px solid var(--success);">
+            <h3>Overall Machine Health</h3>
+            <h1 style="font-size: 4rem; margin: 10px 0; color: #0f172a;"><span id="healthScore">--</span>%</h1>
+            <p>Operating State: <span id="intelStatus" class="status-badge status-idle">WAITING</span></p>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top: 20px;">
+        <h3>💡 AI Diagnostics & Recommendation</h3>
+        <div id="recBox" style="padding: 15px; background: #f1f5f9; border-left: 4px solid #cbd5e1; font-size: 1.1rem; border-radius: 4px;">
+            Awaiting sufficient machine data to generate insights...
+        </div>
+    </div>
+
+    <script type="module">
+        import { subscribeToLive } from './js/data-service.js';
+        import { calculateFailureRisk, getMachineStatus } from './js/calculations.js';
+
+        subscribeToLive((data) => {
+            if(!data) return;
+
+            // 1. Calculate Risk & Health
+            const risk = calculateFailureRisk(data);
+            const health = (100 - risk).toFixed(0);
+            
+            document.getElementById('riskScore').innerText = risk.toFixed(0);
+            document.getElementById('healthScore').innerText = health;
+
+            // 2. Determine Risk Label and Colors
+            const riskLabelEl = document.getElementById('riskLabel');
+            let label = "SAFE";
+            let color = "var(--success)";
+            
+            if (risk >= 70) { label = "CRITICAL"; color = "var(--danger)"; }
+            else if (risk >= 40) { label = "MODERATE"; color = "var(--warning)"; }
+
+            riskLabelEl.innerText = label;
+            riskLabelEl.style.backgroundColor = color;
+
+            // 3. Status Badge
+            const status = getMachineStatus(data);
+            const statusEl = document.getElementById('intelStatus');
+            statusEl.innerText = status;
+            statusEl.className = `status-badge status-${status.toLowerCase()}`;
+
+            // 4. Recommendation Engine Logic
+            const recBox = document.getElementById('recBox');
+            if (risk >= 70) {
+                recBox.innerHTML = `<strong>⚠️ URGENT: Maintenance recommended soon.</strong> High failure probability detected. Check parameters: Temp (${data.temp.toFixed(1)}°C), Pressure (${data.pressure.toFixed(1)} bar).`;
+                recBox.style.borderLeftColor = "var(--danger)";
+                recBox.style.backgroundColor = "#fee2e2";
+            } else if (risk >= 40) {
+                recBox.innerHTML = `<strong>⚠️ CAUTION:</strong> System is experiencing moderate stress. Monitor CNC load scheduling and consider a brief cooldown cycle.`;
+                recBox.style.borderLeftColor = "var(--warning)";
+                recBox.style.backgroundColor = "#fef3c7";
+            } else {
+                recBox.innerHTML = `✅ <strong>Optimal:</strong> System is running within safe industrial parameters. No action required.`;
+                recBox.style.borderLeftColor = "var(--success)";
+                recBox.style.backgroundColor = "#d1fae5";
+            }
+        });
+    </script>
+</body>
+</html>

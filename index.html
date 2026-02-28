@@ -1,74 +1,112 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>FactoryIQ - Smart Factory Optimization</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IntelliFactory | Global Overview</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+    <h1>🏭 IntelliFactory - Command Center</h1>
+    
+    <nav>
+        <button onclick="location.href='index.html'" style="background: var(--primary); color: white;">Overview</button>
+        <button onclick="location.href='cnc.html'">CNC (Temp/Press)</button>
+        <button onclick="location.href='power.html'">Power & Cost</button>
+        <button onclick="location.href='sustainability.html'">Sustainability</button>
+        <button onclick="location.href='intelligence.html'">Intelligence</button>
+        <button onclick="location.href='analytics.html'">Shift Analytics</button>
+    </nav>
 
-<h1>🏭 FactoryIQ - Smart Resource Optimization</h1>
+    <div class="card" style="margin-bottom: 20px; text-align: center;">
+        <h3>Data Controller</h3>
+        <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
+            <input type="number" id="inPower" placeholder="Power (kW)">
+            <input type="number" id="inTemp" placeholder="Temp (°C)">
+            <input type="number" id="inPressure" placeholder="Pressure (bar)">
+            <button onclick="manualPush()" style="background: var(--success); color: white;">🚀 Push Data</button>
+        </div>
+        <hr style="border: 1px solid #e2e8f0; margin: 15px 0;">
+        <label style="font-weight: bold; cursor: pointer;">
+            <input type="checkbox" id="chkAutoMode" onchange="handleAuto()"> ⚙️ Enable Auto Mode (Simulate Live Factory)
+        </label>
+    </div>
 
-<div class="manual-input-panel">
-  <h3>Input Simulator / Manual Entry</h3>
-  <div class="input-row">
-    <input type="number" id="manualPower" placeholder="Power (kW)" step="0.1">
-    <input type="number" id="manualTemp" placeholder="Temp (°C)" step="1">
-    <input type="number" id="manualPressure" placeholder="Pressure (bar)" step="0.1">
-    <button class="push-btn" onclick="pushManualData()">🚀 Push Data</button>
-  </div>
-</div>
+    <div class="grid">
+        <div class="card">
+            <h3>Machine Status</h3>
+            <span id="globalStatus" class="status-badge status-idle">WAITING</span>
+            <div id="alertBox" style="margin-top: 10px; color: var(--danger); font-weight: bold;"></div>
+        </div>
 
-<div class="grid">
-  <div class="card">
-    <h2>CNC Power</h2>
-    <p id="power">-- kW</p>
-  </div>
+        <div class="card">
+            <h3>CNC Parameters <button onclick="location.href='cnc.html'" style="padding: 2px 8px; font-size: 0.7rem;">Details</button></h3>
+            <p>🌡️ Temp: <span id="idxTemp" style="font-weight: bold; font-size: 1.2rem;">--</span> °C</p>
+            <p>💨 Press: <span id="idxPressure" style="font-weight: bold; font-size: 1.2rem;">--</span> bar</p>
+        </div>
 
-  <div class="card">
-    <h2>Furnace Temp</h2>
-    <p id="temp">-- °C</p>
-  </div>
+        <div class="card">
+            <h3>Power Load <button onclick="location.href='power.html'" style="padding: 2px 8px; font-size: 0.7rem;">Details</button></h3>
+            <p>⚡ <span id="idxPower" style="font-weight: bold; font-size: 1.5rem;">--</span> kW</p>
+        </div>
 
-  <div class="card">
-    <h2>Compressor Pressure</h2>
-    <p id="pressure">-- bar</p>
-  </div>
+        <div class="card">
+            <h3>System Health <button onclick="location.href='intelligence.html'" style="padding: 2px 8px; font-size: 0.7rem;">Details</button></h3>
+            <p>🛡️ Score: <span id="idxHealth" style="font-weight: bold; font-size: 1.5rem;">--</span>%</p>
+        </div>
 
-  <div class="card">
-    <h2>Efficiency Score</h2>
-    <p id="efficiency" style="font-weight: bold;">-- %</p>
-  </div>
+        <div class="card">
+            <h3>Carbon Rate <button onclick="location.href='sustainability.html'" style="padding: 2px 8px; font-size: 0.7rem;">Details</button></h3>
+            <p>🌍 <span id="idxCarbon" style="font-weight: bold; font-size: 1.5rem;">--</span> kg/h</p>
+        </div>
+    </div>
 
-  <div class="card">
-    <h2>Carbon Footprint</h2>
-    <p id="carbon">-- kg CO2/h</p>
-  </div>
+    <script type="module">
+        import { subscribeToLive, pushData, toggleAutoMode } from './js/data-service.js';
+        import { getMachineStatus, calculateFailureRisk, calculateCarbon } from './js/calculations.js';
 
-  <div class="card">
-    <h2>Projected Savings</h2>
-    <p id="savings">--</p>
-  </div>
+        // 1. Manual Push
+        window.manualPush = () => {
+            pushData({
+                power: parseFloat(document.getElementById('inPower').value) || 0,
+                temp: parseFloat(document.getElementById('inTemp').value) || 0,
+                pressure: parseFloat(document.getElementById('inPressure').value) || 0
+            });
+        };
 
-  <div class="card full">
-    <h2>Optimization Recommendation</h2>
-    <p id="recommendation">Waiting for system data...</p>
-  </div>
+        // 2. Auto Mode
+        window.handleAuto = () => {
+            toggleAutoMode(document.getElementById('chkAutoMode').checked);
+        };
 
-  <div class="card full">
-    <h2>Energy Trend</h2>
-    <canvas id="energyChart"></canvas>
-  </div>
+        // 3. Real-Time UI Updates
+        subscribeToLive((data) => {
+            if(!data) return;
+            
+            // Populate Basic Values
+            document.getElementById('idxTemp').innerText = data.temp.toFixed(1);
+            document.getElementById('idxPressure').innerText = data.pressure.toFixed(2);
+            document.getElementById('idxPower').innerText = data.power.toFixed(2);
+            
+            // Populate Calculated Values
+            const risk = calculateFailureRisk(data);
+            const healthScore = 100 - risk; // Inverse of risk
+            document.getElementById('idxHealth').innerText = healthScore.toFixed(0);
+            document.getElementById('idxCarbon').innerText = calculateCarbon(data.power);
 
-  <div class="card full">
-    <h2>Efficiency Gauge</h2>
-    <canvas id="gaugeChart"></canvas>
-  </div>
-</div>
+            // Update Status Badge
+            const status = getMachineStatus(data);
+            const statusEl = document.getElementById('globalStatus');
+            statusEl.innerText = status;
+            statusEl.className = `status-badge status-${status.toLowerCase()}`;
 
-<button class="report-btn" onclick="downloadReport()">Download Report</button>
-
-<script type="module" src="app.js"></script>
+            // Alerts
+            const alertBox = document.getElementById('alertBox');
+            if (data.temp > 880) alertBox.innerText = `⚠️ ALERT: Overheating (${data.temp.toFixed(1)}°C)`;
+            else if (data.pressure > 7.5) alertBox.innerText = `⚠️ ALERT: High Pressure`;
+            else alertBox.innerText = "";
+        });
+    </script>
 </body>
 </html>
